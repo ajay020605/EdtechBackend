@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id              String  @id @default(uuid())
+  fullName        String
+  username        String  @unique
+  email           String  @unique
+  password        String
+  role            Role
+  isEmailVerified Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courses     Course[]     @relation("TeacherCourses")
+  enrollments Enrollment[]
+  progress    Progress[]
+  otps        EmailOTP[]
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+}
+
+model EmailOTP {
+  id        String   @id @default(uuid())
+  otpHash   String
+  expiresAt DateTime
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique // Only one active OTP per user
+
+  createdAt DateTime @default(now())
+}
+
+model TeacherInvite {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  isUsed    Boolean  @default(false)
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id          String @id @default(uuid())
+  title       String
+  description String
+  price       Float
+
+  teacher   User   @relation("TeacherCourses", fields: [teacherId], references: [id])
+  teacherId String
+
+  videos      Video[]
+  enrollments Enrollment[]
+  progress    Progress[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Video {
+  id          String @id @default(uuid())
+  title       String
+  description String
+  videoUrl    String // S3 signed or public URL
+  orderNumber Int
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+
+  progress Progress[]
+
+  createdAt DateTime @default(now())
+}
+
+model Enrollment {
+  id              String           @id @default(uuid())
+  status          EnrollmentStatus
+  stripeSessionId String?          @unique
+  stripePaymentId String?
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+
+  enrolledAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ENROLLED
+  FAILED
+}
+
+model Progress {
+  id             String @id @default(uuid())
+  lastWatchedSec Float
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  course   Course @relation(fields: [courseId], references: [id])
+  courseId String
+
+  video   Video  @relation(fields: [videoId], references: [id])
+  videoId String
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, videoId])
+}

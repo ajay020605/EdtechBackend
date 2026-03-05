@@ -5,12 +5,12 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -38,20 +38,23 @@ enum Role {
 
 model EmailOTP {
   id        String   @id @default(uuid())
+  email     String
   otpHash   String
   expiresAt DateTime
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @unique // Only one active OTP per user
-
   createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+
+  @@index([email])
 }
 
 model TeacherInvite {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  isUsed    Boolean  @default(false)
-  expiresAt DateTime
+  id           String   @id @default(uuid())
+  key          String   @unique
+  teacherEmail String
+  isUsed       Boolean  @default(false)
+  expiresAt    DateTime
 
   createdAt DateTime @default(now())
 }

@@ -305,6 +305,10 @@ export const requestPasswordResetOTP = async (req: Request, res: Response) => {
 export const verifyPasswordResetOTP = async (req: Request, res: Response) => {
   try {
     const { email, otp, newPassword } = req.body;
+    console.log(req.body);
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: "Email, OTP and newPassword are required" });
+    }
 
     const record = await prisma.emailOTP.findFirst({
       where: { email },
@@ -332,7 +336,9 @@ export const verifyPasswordResetOTP = async (req: Request, res: Response) => {
     });
 
     res.json({ message: "Password updated" });
+
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error });
   }
 };
